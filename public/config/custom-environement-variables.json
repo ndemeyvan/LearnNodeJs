@@ -1,0 +1,6 @@
+{
+    "name":"learn Nodejs - prod",
+    "mail":{
+        "host":"prod-mail-server"
+    }
+} 

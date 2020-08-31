@@ -1,89 +1,30 @@
 const express = require("express");
+var startdebug = require('debug')('app:startup')
+var dbdebug = require('debug')('app:db')
+
 const Joi = require("joi");
 const app = express();
+const helmet = require("helmet");
+const morgan = require('morgan');
+const auth = require('./logger');
+const courses = require('./routes/courses');
+const home = require('./routes/home');
 
+//initiation au middleWare
 app.use(express.json());
-const courses = [
-  {
-    id: 0,
-    name: "Education physique",
-  },
-  {
-    id: 1,
-    name: "SVT",
-  },
-  {
-    id: 2,
-    name: "Histoire",
-  },
-];
-//get au demarage
-app.get("/", (req, res) => {
-  res.send("Hello World");
-});
-//get pour recuperer tout sans specification
-app.get("/api/courses", (req, res) => {
-  res.send(courses);
-});
-//post pour mettre ajouter des elements
-app.post("/api/courses", (req, res) => {
-  const validation = validateCourse(req.body);
-  if (validation.error) {
-    res.status(400).send(validation.error.details[0].message);
-    return;
-  }
-  const course = {
-    id: courses.length + 1,
-    name: req.body.name,
-  };
-  courses.push(course);
-  res.send(courses);
-});
-//recuperer avec le get et l'id pour un element specifique
-app.get("/api/courses/:id", (req, res) => {
-  const course = courses.find((c) => c.id === parseInt(req.params.id));
-  if (!course) {
-    res.status(404).send("the course is not found");
-  } else {
-    res.send(courses[parseInt(req.params.id)]);
-  }
-  res.send();
-});
-///mettre a jour avec la methode put
-app.put("/api/courses/:id", (req, res) => {
-  const course = courses.find((c) => c.id === parseInt(req.params.id));
-  if (!course) {
-    res.status(404).send("the course is not found");
-  } else {
-    const validation = validateCourse(req.body);
+app.use(express.urlencoded({extended:true}))
+app.use(express.static('public'))
+app.use(auth);
+app.use(helmet());
+app.use(morgan('tiny'));
+app.set('view engine','pug');
+app.set('views','./views');//default view
+app.set('/api/courses',courses);//default view
+app.set('/',home);//default view
 
-    if (validation.error) {
-      res.status(400).send(validation.error.details[0].message);
-      return;
-    }
-    course.name = req.body.name;
-    res.send(course);
-  }
-});
-//fonction de validation de requete
-function validateCourse(course) {
-  const schema = Joi.object({
-    name: Joi.string().min(3).required(),
-  });
-  const validation = schema.validate({ name: course.name });
-  return validation;
-}
-//supprimer un cour 
-app.delete("/api/courses/:id", (req, res) => {
-  const course = courses.find((c) => c.id === parseInt(req.params.id));
-  if (!course) {
-    res.status(404).send("the course is not found");
-    return;
-  } else {
-    const index = courses.indexOf(course);
-    courses.splice(index, 1);
-    res.send(courses);
-  }
-});
+dbdebug('Connect to the database ...')
+
+
+
 app.listen(3000);
 console.log("le serveur ecoute sur le  port : 3000 ...");
